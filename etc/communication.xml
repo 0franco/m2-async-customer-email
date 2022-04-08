@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Communication/etc/communication.xsd">
+    <topic name="customer.forgot.pwd" request="Magento\AsynchronousOperations\Api\Data\OperationInterface" is_synchronous="false">
+        <handler name="customer.forgot.pwd.consumer" type="OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer" method="execute"/>
+    </topic>
+</config>

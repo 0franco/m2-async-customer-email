@@ -1,0 +1,22 @@
+{
+  "name": "oh/module-async-customer-email",
+  "version": "1.0.0",
+  "description": "N/A",
+  "type": "magento2-module",
+  "require": {
+    "magento/framework": "*",
+    "magento/module-customer": "103.0.*",
+    "m2-oh/core": "1.0.*"
+  },
+  "license": [
+    "Proprietary"
+  ],
+  "autoload": {
+    "files": [
+      "registration.php"
+    ],
+    "psr-4": {
+      "OH\\AsyncCustomerEmail\\": ""
+    }
+  }
+}

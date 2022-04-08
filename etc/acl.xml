@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="OH_Core::core">
+                    <resource id="OH_AsyncCustomerEmail::settings" title="Async Customer Email"
+                              translate="title" sortOrder="1180"/>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>
