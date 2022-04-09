@@ -4,5 +4,6 @@
     <exchange name="magento" type="topic" connection="amqp">
         <binding id="customer.forgot.pwd" topic="customer.forgot.pwd" destinationType="queue" destination="customer.forgot.pwd"/>
         <binding id="customer.new.account" topic="customer.new.account" destinationType="queue" destination="customer.new.account"/>
+        <binding id="customer.cred.change" topic="customer.cred.change" destinationType="queue" destination="customer.cred.change"/>
     </exchange>
 </config>

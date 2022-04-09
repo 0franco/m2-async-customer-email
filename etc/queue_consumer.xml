@@ -12,4 +12,10 @@
               connection="amqp"
               consumerInstance="Magento\Framework\MessageQueue\Consumer"
               handler="OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer\NewAccount::execute"/>
+
+    <consumer name="customer.cred.change"
+              queue="customer.cred.change"
+              connection="amqp"
+              consumerInstance="Magento\Framework\MessageQueue\Consumer"
+              handler="OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer\CredentialsChange::execute"/>
 </config>

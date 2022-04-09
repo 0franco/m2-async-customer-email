@@ -129,4 +129,38 @@ class EmailNotification
             Ops::TOPIC_NAME_FORGOT_PWD
         );
     }
+
+    /**
+     * Save customer message
+     *
+     * @param \Magento\Customer\Model\EmailNotificationInterface $emailNotification
+     * @param \Closure $proceed
+     * @param CustomerInterface $savedCustomer
+     * @param string $origCustomerEmail
+     * @param bool $isPasswordChanged
+     * @return void
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function aroundCredentialsChanged(
+        \Magento\Customer\Model\EmailNotificationInterface $emailNotification,
+        \Closure $proceed,
+        CustomerInterface $savedCustomer,
+        $origCustomerEmail,
+        $isPasswordChanged = false
+    ) {
+        if (!$this->configProvider->isEnable()) {
+            return $proceed($savedCustomer, $origCustomerEmail, $isPasswordChanged);
+        }
+
+        $this->scheduler->execute(
+            [
+                'entity_id' => $savedCustomer->getId(),
+                'email' => $savedCustomer->getEmail(),
+                'store_id' => $this->storeManager->getStore()->getId(),
+                'orig_email' => $origCustomerEmail,
+                'pwd_changed' => $isPasswordChanged
+            ],
+            Ops::TOPIC_NAME_CREDENTIALS_CHANGED
+        );
+    }
 }

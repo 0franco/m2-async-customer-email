@@ -8,4 +8,8 @@
     <publisher topic="customer.new.account">
         <connection name="amqp" exchange="magento"/>
     </publisher>
+
+    <publisher topic="customer.cred.change">
+        <connection name="amqp" exchange="magento"/>
+    </publisher>
 </config>

@@ -8,4 +8,8 @@
     <topic name="customer.new.account" request="Magento\AsynchronousOperations\Api\Data\OperationInterface" is_synchronous="false">
         <handler name="customer.new.account" type="OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer\NewAccount" method="execute"/>
     </topic>
+
+    <topic name="customer.cred.change" request="Magento\AsynchronousOperations\Api\Data\OperationInterface" is_synchronous="false">
+        <handler name="customer.cred.change" type="OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer\CredentialsChange" method="execute"/>
+    </topic>
 </config>

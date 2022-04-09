@@ -6,6 +6,7 @@ namespace OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer;
 use Magento\AsynchronousOperations\Api\Data\OperationInterface;
 use Magento\Framework\Exception\MailException;
 use OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer;
+use \Magento\Customer\Model\EmailNotification;
 
 class ForgotPwd extends Consumer
 {
@@ -30,8 +31,8 @@ class ForgotPwd extends Consumer
         try {
             $this->notifier->sendEmailTemplate(
                 $customer,
-                \Magento\Customer\Model\EmailNotification::XML_PATH_FORGOT_EMAIL_TEMPLATE,
-                \Magento\Customer\Model\EmailNotification::XML_PATH_FORGOT_EMAIL_IDENTITY,
+                EmailNotification::XML_PATH_FORGOT_EMAIL_TEMPLATE,
+                EmailNotification::XML_PATH_FORGOT_EMAIL_IDENTITY,
                 ['customer' => $customerEmailData, 'store' => $this->storeManager->getStore($storeId)],
                 $storeId
             );
