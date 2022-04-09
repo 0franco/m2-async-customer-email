@@ -7,7 +7,9 @@ use Magento\AsynchronousOperations\Api\Data\OperationInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
 use Magento\Customer\Api\Data\CustomerInterfaceFactory;
 use Magento\Customer\Model\EmailNotificationInterface;
+use Magento\Framework\Bulk\OperationInterface as OperationBulkInterface;
 use Magento\Framework\EntityManager\EntityManager;
+use Magento\Framework\Exception\MailException;
 use Magento\Framework\Serialize\SerializerInterface;
 use OH\AsyncCustomerEmail\Model\Operation\Management;
 use OH\AsyncCustomerEmail\Model\Operation\Ops;
@@ -36,27 +38,43 @@ class Consumer
     private EmailNotificationInterface $emailNotification;
 
     /**
-     * @var CustomerInterfaceFactory
+     * @var CustomerRepositoryInterface
      */
-    private CustomerInterfaceFactory $customerFactory;
+    private CustomerRepositoryInterface $customerRepository;
 
-    private $customerRepository;
+    /**
+     * @var \OH\AsyncCustomerEmail\Model\Customer\Data
+     */
+    private $customerData;
+
+    /**
+     * @var \OH\AsyncCustomerEmail\Model\Notifier
+     */
+    private $notifier;
+
+    /**
+     * @var \Magento\Store\Model\StoreManagerInterface
+     */
+    private $storeManager;
 
     public function __construct(
+        \Magento\Store\Model\StoreManagerInterface $storeManager,
+        \OH\AsyncCustomerEmail\Model\Notifier $notifier,
+        \OH\AsyncCustomerEmail\Model\Customer\Data $customerData,
         CustomerRepositoryInterface $customerRepository,
-        CustomerInterfaceFactory $customerFactory,
         EmailNotificationInterface $emailNotification,
         Management $operationManagement,
         OHLogger $logger,
-        EntityManager $entityManager,
         SerializerInterface $serializer
     ) {
+        $this->storeManager = $storeManager;
+        $this->notifier = $notifier;
         $this->customerRepository = $customerRepository;
-        $this->customerFactory = $customerFactory;
         $this->emailNotification = $emailNotification;
         $this->operationManagement = $operationManagement;
         $this->logger = $logger;
         $this->serializer = $serializer;
+        $this->customerData = $customerData;
     }
 
     /**
@@ -69,10 +87,10 @@ class Consumer
     {
         try {
             $this->runOperation($operation);
-            $this->operationManagement->markOperationAsResolved($operation)
+            $this->operationManagement->changeOpStatus($operation);
             $this->logger->debug(sprintf('Consumer %s executed', get_class($this)));
         } catch (\Exception $e) {
-            $this->operationManagement->markRetriablyFailed($operation);
+            $this->operationManagement->changeOpStatus($operation, OperationBulkInterface::STATUS_TYPE_RETRIABLY_FAILED);
             $this->logger->critical($e->getMessage());
         }
     }
@@ -88,6 +106,8 @@ class Consumer
      */
     private function runOperation($operation)
     {
+        $this->logger->debug('TOPIC NAME: ' . $operation->getTopicName());
+
         switch ($operation->getTopicName()) {
             case Ops::TOPIC_NAME_FORGOT_PWD:
                 $this->processForgotPwd($operation);
@@ -109,6 +129,22 @@ class Consumer
     {
         $unserializedData = $this->serializer->unserialize($operation->getSerializedData());
         $customer = $this->customerRepository->getById($unserializedData['entity_id']);
-        $this->emailNotification->passwordReminder($customer);
+        $customerEmailData = $this->customerData->getFullCustomerObject($customer);
+
+        if (!$storeId = $customer->getStoreId()) {
+            $storeId = $unserializedData['store']['store_id'];
+        }
+
+        try {
+            $this->notifier->sendEmailTemplate(
+                $customer,
+                \Magento\Customer\Model\EmailNotification::XML_PATH_FORGOT_EMAIL_TEMPLATE,
+                \Magento\Customer\Model\EmailNotification::XML_PATH_FORGOT_EMAIL_IDENTITY,
+                ['customer' => $customerEmailData, 'store' => $this->storeManager->getStore($storeId)],
+                $storeId
+            );
+        } catch (MailException $e) {
+            $this->logger->critical($e);
+        }
     }
 }

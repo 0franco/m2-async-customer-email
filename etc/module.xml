@@ -4,6 +4,7 @@
     <module name="OH_AsyncCustomerEmail">
         <sequence>
             <module name="Magento_Customer"/>
+            <module name="Magento_AsynchronousOperations"/>
             <module name="OH_Core"/>
         </sequence>
     </module>
