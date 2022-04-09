@@ -5,5 +5,11 @@
               queue="customer.forgot.pwd"
               connection="amqp"
               consumerInstance="Magento\Framework\MessageQueue\Consumer"
-              handler="OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer::execute"/>
+              handler="OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer\ForgotPwd::execute"/>
+
+    <consumer name="customer.new.account"
+              queue="customer.new.account"
+              connection="amqp"
+              consumerInstance="Magento\Framework\MessageQueue\Consumer"
+              handler="OH\AsyncCustomerEmail\Model\Queue\Handler\Consumer\NewAccount::execute"/>
 </config>

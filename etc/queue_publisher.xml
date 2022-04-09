@@ -4,4 +4,8 @@
     <publisher topic="customer.forgot.pwd">
         <connection name="amqp" exchange="magento"/>
     </publisher>
+
+    <publisher topic="customer.new.account">
+        <connection name="amqp" exchange="magento"/>
+    </publisher>
 </config>

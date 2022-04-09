@@ -13,6 +13,14 @@
                     <comment>Enable to send email asynchronously</comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
+                <field id="enable_debug" translate="label comment" type="select"
+                       showInDefault="1">
+                    <label>Enable debug</label>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <depends>
+                        <field id="enabled">1</field>
+                    </depends>
+                </field>
             </group>
         </section>
     </system>

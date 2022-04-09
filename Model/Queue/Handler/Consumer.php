@@ -5,62 +5,68 @@ namespace OH\AsyncCustomerEmail\Model\Queue\Handler;
 
 use Magento\AsynchronousOperations\Api\Data\OperationInterface;
 use Magento\Customer\Api\CustomerRepositoryInterface;
-use Magento\Customer\Api\Data\CustomerInterfaceFactory;
 use Magento\Customer\Model\EmailNotificationInterface;
 use Magento\Framework\Bulk\OperationInterface as OperationBulkInterface;
-use Magento\Framework\EntityManager\EntityManager;
-use Magento\Framework\Exception\MailException;
 use Magento\Framework\Serialize\SerializerInterface;
+use OH\AsyncCustomerEmail\Model\ConfigProvider;
 use OH\AsyncCustomerEmail\Model\Operation\Management;
-use OH\AsyncCustomerEmail\Model\Operation\Ops;
 use OH\Core\Logger\OHLogger;
+use Magento\Store\Model\StoreManagerInterface;
+use OH\AsyncCustomerEmail\Model\Notifier;
+use OH\AsyncCustomerEmail\Model\Customer\Data as CustomerData;
 
-class Consumer
+abstract class Consumer
 {
     /**
      * @var OHLogger
      */
-    private OHLogger $logger;
+    protected OHLogger $logger;
 
     /**
      * @var SerializerInterface
      */
-    private SerializerInterface $serializer;
+    protected SerializerInterface $serializer;
 
     /**
      * @var Management
      */
-    private Management $operationManagement;
+    protected Management $operationManagement;
 
     /**
      * @var EmailNotificationInterface
      */
-    private EmailNotificationInterface $emailNotification;
+    protected EmailNotificationInterface $emailNotification;
 
     /**
      * @var CustomerRepositoryInterface
      */
-    private CustomerRepositoryInterface $customerRepository;
+    protected CustomerRepositoryInterface $customerRepository;
 
     /**
-     * @var \OH\AsyncCustomerEmail\Model\Customer\Data
+     * @var CustomerData
      */
-    private $customerData;
+    protected CustomerData $customerData;
 
     /**
-     * @var \OH\AsyncCustomerEmail\Model\Notifier
+     * @var Notifier
      */
-    private $notifier;
+    protected Notifier $notifier;
 
     /**
-     * @var \Magento\Store\Model\StoreManagerInterface
+     * @var StoreManagerInterface
      */
-    private $storeManager;
+    protected StoreManagerInterface $storeManager;
+
+    /**
+     * @var ConfigProvider
+     */
+    protected ConfigProvider $configProvider;
 
     public function __construct(
-        \Magento\Store\Model\StoreManagerInterface $storeManager,
-        \OH\AsyncCustomerEmail\Model\Notifier $notifier,
-        \OH\AsyncCustomerEmail\Model\Customer\Data $customerData,
+        ConfigProvider $configProvider,
+        StoreManagerInterface $storeManager,
+        Notifier $notifier,
+        CustomerData $customerData,
         CustomerRepositoryInterface $customerRepository,
         EmailNotificationInterface $emailNotification,
         Management $operationManagement,
@@ -75,7 +81,16 @@ class Consumer
         $this->logger = $logger;
         $this->serializer = $serializer;
         $this->customerData = $customerData;
+        $this->configProvider = $configProvider;
     }
+
+    /**
+     * Process operation
+     *
+     * @param OperationInterface $operation
+     * @return bool
+     */
+    protected abstract function process(OperationInterface $operation): bool;
 
     /**
      * Run operation
@@ -86,9 +101,12 @@ class Consumer
     public function execute(OperationInterface $operation): void
     {
         try {
-            $this->runOperation($operation);
-            $this->operationManagement->changeOpStatus($operation);
-            $this->logger->debug(sprintf('Consumer %s executed', get_class($this)));
+            $this->debug('TOPIC NAME: ' . $operation->getTopicName());
+
+            $this->operationManagement->changeOpStatus($operation,
+                $this->process($operation) ? OperationBulkInterface::STATUS_TYPE_COMPLETE :
+                    OperationBulkInterface::STATUS_TYPE_RETRIABLY_FAILED
+            );
         } catch (\Exception $e) {
             $this->operationManagement->changeOpStatus($operation, OperationBulkInterface::STATUS_TYPE_RETRIABLY_FAILED);
             $this->logger->critical($e->getMessage());
@@ -96,55 +114,15 @@ class Consumer
     }
 
     /**
-     * Runs operations based on topic
+     * Debug
      *
-     * @param $operation
+     * @param $data
      * @return void
-     * @throws \Magento\Framework\Exception\LocalizedException
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
-     * @throws \Exception
      */
-    private function runOperation($operation)
+    protected function debug($data)
     {
-        $this->logger->debug('TOPIC NAME: ' . $operation->getTopicName());
-
-        switch ($operation->getTopicName()) {
-            case Ops::TOPIC_NAME_FORGOT_PWD:
-                $this->processForgotPwd($operation);
-                break;
-            default:
-                throw new \Exception('Invalid operation');
-        }
-    }
-
-    /**
-     * Process forgot password
-     *
-     * @param $operation
-     * @return void
-     * @throws \Magento\Framework\Exception\LocalizedException
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
-     */
-    private function processForgotPwd($operation)
-    {
-        $unserializedData = $this->serializer->unserialize($operation->getSerializedData());
-        $customer = $this->customerRepository->getById($unserializedData['entity_id']);
-        $customerEmailData = $this->customerData->getFullCustomerObject($customer);
-
-        if (!$storeId = $customer->getStoreId()) {
-            $storeId = $unserializedData['store']['store_id'];
-        }
-
-        try {
-            $this->notifier->sendEmailTemplate(
-                $customer,
-                \Magento\Customer\Model\EmailNotification::XML_PATH_FORGOT_EMAIL_TEMPLATE,
-                \Magento\Customer\Model\EmailNotification::XML_PATH_FORGOT_EMAIL_IDENTITY,
-                ['customer' => $customerEmailData, 'store' => $this->storeManager->getStore($storeId)],
-                $storeId
-            );
-        } catch (MailException $e) {
-            $this->logger->critical($e);
+        if ($this->configProvider->isDebugEnabled()) {
+            $this->logger->debug($data);
         }
     }
 }
